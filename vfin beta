@@ -1,0 +1,281 @@
+--[[
+    Build a Base and Steal - Server Hop 5/6
+    Version beta
+]]
+
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+
+getgenv().Config = {
+    PlaceId = 132016691802922,
+    TargetPlayers = 5,
+    ServerPages = 10
+}
+
+pcall(function()
+    local oldGui = game.CoreGui:FindFirstChild("UltraRareFinder")
+    if oldGui then oldGui:Destroy() end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "UltraRareFinder"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 280, 0, 135)
+Frame.Position = UDim2.new(0.5, -140, 0.5, -67)
+Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = Frame
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(35, 35, 35)
+Stroke.Thickness = 1
+Stroke.Parent = Frame
+
+local DiscordBtn = Instance.new("TextButton")
+DiscordBtn.Size = UDim2.new(1, -55, 0, 30)
+DiscordBtn.Position = UDim2.new(0, 12, 0, 8)
+DiscordBtn.BackgroundTransparency = 1
+DiscordBtn.Text = "https://discord.gg/axZGZySr8Q"
+DiscordBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+DiscordBtn.TextSize = 13
+DiscordBtn.Font = Enum.Font.Gotham
+DiscordBtn.AutoButtonColor = false
+DiscordBtn.Parent = Frame
+
+DiscordBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        pcall(function()
+            setclipboard("https://discord.gg/axZGZySr8Q")
+        end)
+        DiscordBtn.Text = "COPIADO ✓"
+        task.delay(1.5, function()
+            if DiscordBtn and DiscordBtn.Parent then
+                DiscordBtn.Text = "https://discord.gg/axZGZySr8Q"
+            end
+        end)
+    end
+end)
+
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+MinimizeBtn.Position = UDim2.new(1, -32, 0, 8)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MinimizeBtn.Text = "X"
+MinimizeBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+MinimizeBtn.TextSize = 11
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.Parent = Frame
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeBtn
+
+local Separator = Instance.new("Frame")
+Separator.Size = UDim2.new(1, -24, 0, 1)
+Separator.Position = UDim2.new(0, 12, 0, 46)
+Separator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Separator.BorderSizePixel = 0
+Separator.Parent = Frame
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -24, 0, 22)
+Status.Position = UDim2.new(0, 12, 0, 52)
+Status.BackgroundTransparency = 1
+Status.Text = "Listo • buscando servidores 5/6"
+Status.TextColor3 = Color3.fromRGB(150, 150, 150)
+Status.TextSize = 11
+Status.Font = Enum.Font.Gotham
+Status.TextWrapped = true
+Status.Parent = Frame
+
+local AutoJoinBtn = Instance.new("TextButton")
+AutoJoinBtn.Size = UDim2.new(0, 115, 0, 34)
+AutoJoinBtn.Position = UDim2.new(0.5, -57, 1, -47)
+AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+AutoJoinBtn.Text = "AUTO JOIN"
+AutoJoinBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+AutoJoinBtn.TextSize = 12
+AutoJoinBtn.Font = Enum.Font.GothamBold
+AutoJoinBtn.BorderSizePixel = 0
+AutoJoinBtn.Parent = Frame
+
+local AutoCorner = Instance.new("UICorner")
+AutoCorner.CornerRadius = UDim.new(0, 7)
+AutoCorner.Parent = AutoJoinBtn
+
+local RestoreBtn = Instance.new("TextButton")
+RestoreBtn.Size = UDim2.new(0, 40, 0, 40)
+RestoreBtn.Position = UDim2.new(0, 15, 0.5, -20)
+RestoreBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+RestoreBtn.Text = "+"
+RestoreBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RestoreBtn.TextSize = 20
+RestoreBtn.Font = Enum.Font.GothamBold
+RestoreBtn.BorderSizePixel = 0
+RestoreBtn.Visible = false
+RestoreBtn.Parent = ScreenGui
+
+local RestoreCorner = Instance.new("UICorner")
+RestoreCorner.CornerRadius = UDim.new(0, 9)
+RestoreCorner.Parent = RestoreBtn
+
+local RestoreStroke = Instance.new("UIStroke")
+RestoreStroke.Color = Color3.fromRGB(35, 35, 35)
+RestoreStroke.Thickness = 1
+RestoreStroke.Parent = RestoreBtn
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+    RestoreBtn.Visible = true
+end)
+
+RestoreBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = true
+    RestoreBtn.Visible = false
+end)
+
+local function GetServers()
+    local servers = {}
+    local cursor = ""
+
+    for page = 1, getgenv().Config.ServerPages do
+        Status.Text = string.format(
+            "Buscando servidores 5/6...\nPágina %d/%d",
+            page,
+            getgenv().Config.ServerPages
+        )
+
+        local url =
+            "https://games.roblox.com/v1/games/"
+            .. tostring(getgenv().Config.PlaceId)
+            .. "/servers/Public?sortOrder=Asc&limit=100"
+
+        if cursor ~= "" then
+            url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
+        end
+
+        local success, result = pcall(function()
+            return game:HttpGet(url)
+        end)
+
+        if not success or not result then
+            break
+        end
+
+        local decodeSuccess, data = pcall(function()
+            return HttpService:JSONDecode(result)
+        end)
+
+        if not decodeSuccess or not data then
+            break
+        end
+
+        for _, server in ipairs(data.data or {}) do
+            local players = tonumber(server.playing) or 0
+            local maxPlayers = tonumber(server.maxPlayers) or 0
+
+            if players == getgenv().Config.TargetPlayers
+                and maxPlayers >= 6
+                and server.id
+                and server.id ~= game.JobId then
+
+                table.insert(servers, {
+                    id = server.id,
+                    players = players,
+                    maxPlayers = maxPlayers,
+                    ping = server.ping
+                })
+            end
+        end
+
+        cursor = data.nextPageCursor or ""
+        if cursor == "" then break end
+    end
+
+    return servers
+end
+
+local function JoinServer()
+    if AutoJoinBtn:GetAttribute("Busy") then return end
+
+    AutoJoinBtn:SetAttribute("Busy", true)
+    AutoJoinBtn.Text = "BUSCANDO..."
+    AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+    Status.Text = "Buscando servidores con 5 jugadores..."
+
+    local success, servers = pcall(GetServers)
+
+    if not success or not servers then
+        Status.Text = "Error obteniendo servidores."
+        AutoJoinBtn.Text = "AUTO JOIN"
+        AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        AutoJoinBtn:SetAttribute("Busy", false)
+        return
+    end
+
+    if #servers == 0 then
+        Status.Text = "No encontré servidores con 5 jugadores."
+        AutoJoinBtn.Text = "AUTO JOIN"
+        AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        AutoJoinBtn:SetAttribute("Busy", false)
+        return
+    end
+
+    local selectedServer = servers[math.random(1, #servers)]
+
+    Status.Text = string.format(
+        "Uniéndote a servidor %d/%d...",
+        selectedServer.players,
+        selectedServer.maxPlayers
+    )
+
+    local teleportSuccess, teleportError = pcall(function()
+        TeleportService:TeleportToPlaceInstance(
+            getgenv().Config.PlaceId,
+            selectedServer.id,
+            LocalPlayer
+        )
+    end)
+
+    if not teleportSuccess then
+        warn("Teleport error:", teleportError)
+        Status.Text = "No se pudo unir al servidor."
+        AutoJoinBtn.Text = "AUTO JOIN"
+        AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        AutoJoinBtn:SetAttribute("Busy", false)
+        return
+    end
+
+    Status.Text = "Teleport iniciado..."
+end
+
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+    if player ~= LocalPlayer then return end
+
+    warn("TeleportInitFailed:", teleportResult, errorMessage)
+
+    if AutoJoinBtn and AutoJoinBtn.Parent then
+        AutoJoinBtn.Text = "AUTO JOIN"
+        AutoJoinBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        AutoJoinBtn:SetAttribute("Busy", false)
+    end
+
+    if Status and Status.Parent then
+        Status.Text = "Falló el teleport."
+    end
+end)
+
+AutoJoinBtn.MouseButton1Click:Connect(JoinServer)
+
+print("Server Hop 5/6 cargado")
